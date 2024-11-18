@@ -1,5 +1,7 @@
-package nandestech;
+package nandestech.application;
 
+import nandestech.dto.PeopleDeserializationSchema;
+import nandestech.model.People;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
 import org.apache.flink.connector.jdbc.JdbcExecutionOptions;
@@ -13,8 +15,7 @@ import org.apache.kafka.common.TopicPartition;
 import java.util.Arrays;
 import java.util.HashSet;
 
-public class Main {
-
+public class PeopleApp {
     static final String TOPIC = "processed_data";
     static final String BROKERS = "localhost:9092";
 
@@ -43,14 +44,13 @@ public class Main {
                 env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka");
 
         //Add Sink
-        kafka.addSink(JdbcSink.sink("insert into public.people (id, name, timestamp, country, job, image) values (?, ?, ?, ?, ?, ?)",
+        kafka.addSink(JdbcSink.sink("insert into public.people (name, timestamp, country, job, image) values (?, ?, ?, ?, ?)",
                 (statement, event) -> {
-                    statement.setString(1, event.id);
-                    statement.setString(2, event.name);
-                    statement.setString(3, event.timestamp);
-                    statement.setString(4, event.country);
-                    statement.setString(5, event.job);
-                    statement.setString(6, event.image);
+                    statement.setString(1, event.name);
+                    statement.setString(2, event.timestamp);
+                    statement.setString(3, event.country);
+                    statement.setString(4, event.job);
+                    statement.setString(5, event.image);
                 },
                 JdbcExecutionOptions.builder()
                         .withBatchSize(1000)

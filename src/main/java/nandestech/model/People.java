@@ -1,4 +1,4 @@
-package nandestech;
+package nandestech.model;
 
 import java.util.Objects;
 
@@ -59,7 +59,7 @@ public class People {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        People people = (People) o;
+        nandestech.model.People people = (nandestech.model.People) o;
         return id.equals(people.id) && name == people.name && timestamp == people.timestamp && country == people.country && job == people.job && image == people.image;
 
     }

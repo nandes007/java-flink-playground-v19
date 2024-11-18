@@ -1,13 +1,13 @@
-package nandestech;
+package nandestech.dto;
 
-//import com.fasterxml.jackson.databind.ObjectMapper;
-//import com.fasterxml.jackson.databind.json.JsonMapper;
-//import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.io.IOException;
+import nandestech.model.People;
+import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.serialization.AbstractDeserializationSchema;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.json.JsonMapper;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import java.io.IOException;
 
 public class PeopleDeserializationSchema extends AbstractDeserializationSchema<People> {
     private static final long serialVersionUID = 1L;
@@ -19,7 +19,7 @@ public class PeopleDeserializationSchema extends AbstractDeserializationSchema<P
      * creating a new ObjectMapper for every record.
      */
     @Override
-    public void open(InitializationContext context) {
+    public void open(DeserializationSchema.InitializationContext context) {
         // JavaTimeModule is needed for Java 8 data time (Instant) support
         objectMapper = JsonMapper.builder().build().registerModule(new JavaTimeModule());
     }
