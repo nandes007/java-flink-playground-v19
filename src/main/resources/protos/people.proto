@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package nandestech.protos;
+
+message People {
+  string name = 1;
+  string timestamp = 2;
+  string country = 3;
+  string job = 4;
+  string image = 5;
+}
