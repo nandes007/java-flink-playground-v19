@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package nandestech.protos;
+
+import "google/protobuf/timestamp.proto";
+
+message EventStore {
+  string event_store_id = 1;
+  string event_name = 2;
+  string item_number = 3;
+  string item_type = 4;
+  int32 user_id = 5;
+  string user_login = 6;
+  int32 node_id = 7;
+  string node_code = 8;
+  google.protobuf.Timestamp created_at = 9;
+}
