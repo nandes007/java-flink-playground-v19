@@ -27,8 +27,8 @@ public class KafkaEventStoreProtobufConsumer {
             try {
                 for (ConsumerRecord<String, byte[]> record : records) {
                     EventStoreOuterClass.EventStore eventStore = EventStoreOuterClass.EventStore.parseFrom(record.value());
-                    System.out.printf("Received: Event Store ID=%s, Event Name=%s, Item Number=%s%n",
-                            eventStore.getEventStoreId(), eventStore.getEventName(), eventStore.getItemNumber());
+                    System.out.printf("Received: Event Store ID=%s, Event Name=%s, Item Number=%s, Item Type=%s, User ID=%s, User Login=%s, Node Code=%s, Created At=%s%n",
+                            eventStore.getEventStoreId(), eventStore.getEventName(), eventStore.getItemNumber(), eventStore.getItemType(), eventStore.getUserId(), eventStore.getUserLogin(), eventStore.getNodeCode(), eventStore.getCreatedAt());
                 }
             } catch (Exception e) {
                 System.out.println("Failed to deserialize Protobuf message: " + e.getMessage());
