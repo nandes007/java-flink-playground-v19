@@ -36,6 +36,8 @@ public class KafkaProtobufProducer {
                         metadata.topic(), metadata.partition(), metadata.offset());
             }
         }).get();
+
+        producer.flush();
         producer.close();
     }
 }

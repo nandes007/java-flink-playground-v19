@@ -16,6 +16,7 @@ public class KafkaProtobufConsumer {
         properties.put("group.id", "protobufConsumerGroup01");
         properties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         properties.put("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+        properties.put("auto.offset.reset", "earliest");
 
         KafkaConsumer<String, byte[]> consumer = new KafkaConsumer<>(properties);
         consumer.subscribe(Collections.singletonList("people_protobuf"));
