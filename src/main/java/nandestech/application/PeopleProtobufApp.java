@@ -52,12 +52,14 @@ public class PeopleProtobufApp {
                         .setTopics(TOPIC)
                         .setGroupId("groupId-protobuf-01")
                         .setStartingOffsets(OffsetsInitializer.earliest())
+//                        .setValueOnlyDeserializer(new PeopleProtobufDeserializationSchema())
                         .setValueOnlyDeserializer(new PeopleProtobufDeserializationSchema())
                         .build();
 
         DataStreamSource<PeopleOuterClass.People> kafka = env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka");
+//        System.out.println("Running Debugging...");
 
-//        kafka.print();
+        kafka.print();
 
         kafka.addSink(JdbcSink.sink("insert into public.people (name, timestamp, country, job, image) values (?, ?, ?, ?, ?)",
                 (statement, event) -> {
