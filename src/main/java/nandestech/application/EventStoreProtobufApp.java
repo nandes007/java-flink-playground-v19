@@ -40,32 +40,19 @@ public class EventStoreProtobufApp {
         DataStream<EventStoreOuterClass.EventStore> kafkaStream =
                 env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka");
 
-        // Map Protobuf data to Tuple8
-        DataStream<Tuple8<String, String, String, String, Integer, String, Integer, String>> processedStream =
-                kafkaStream.map(event -> new Tuple8<>(
-                        event.getEventStoreId(),
-                        event.getEventName(),
-                        event.getItemNumber(),
-                        event.getItemType(),
-                        event.getUserId(),
-                        event.getUserLogin(),
-                        event.getNodeId(),
-                        event.getNodeCode()
-                ));
-
         // Define JDBC sink
-        processedStream.addSink(
+        kafkaStream.addSink(
                 JdbcSink.sink(
                         "INSERT INTO public.event_store (event_store_id, event_name, item_number, item_type, user_id, user_login, node_id, node_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                        (statement, tuple) -> {
-                            statement.setString(1, tuple.f0);
-                            statement.setString(2, tuple.f1);
-                            statement.setString(3, tuple.f2);
-                            statement.setString(4, tuple.f3);
-                            statement.setInt(5, tuple.f4);
-                            statement.setString(6, tuple.f5);
-                            statement.setInt(7, tuple.f6);
-                            statement.setString(8, tuple.f7);
+                        (statement, event) -> {
+                            statement.setString(1, event.getEventStoreId());
+                            statement.setString(2, event.getEventName());
+                            statement.setString(3, event.getItemNumber());
+                            statement.setString(4, event.getItemType());
+                            statement.setInt(5, event.getUserId());
+                            statement.setString(6, event.getUserLogin());
+                            statement.setInt(7, event.getNodeId());
+                            statement.setString(8, event.getNodeCode());
                         },
                         JdbcExecutionOptions.builder()
                                 .withBatchSize(1000)

@@ -2,9 +2,12 @@ package nandestech.application;
 
 import nandestech.dto.PeopleCustomSerialization;
 import nandestech.dto.PeopleProtobufDeserializationSchema;
+import nandestech.dto.person.GenericBinaryProtoDeserializer;
+import nandestech.dto.person.PeopleDeserialize;
 import nandestech.protos.EventStoreOuterClass;
 import nandestech.protos.PeopleOuterClass;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.PipelineOptions;
@@ -14,13 +17,16 @@ import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
+import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import com.twitter.chill.protobuf.ProtobufSerializer;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Properties;
 
 public class PeopleProtobufApp {
     public static final String TOPIC = "people_protobuf";
@@ -28,60 +34,28 @@ public class PeopleProtobufApp {
 
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-//        env.getConfig().registerTypeWithKryoSerializer(
-//                PeopleOuterClass.People.class,
-//                new ProtobufSerializer()
-////                ProtobufSerializer.class
-//        );
-        env.getConfig().registerTypeWithKryoSerializer(
-                PeopleOuterClass.People.class,
-                ProtobufSerializer.class
-        );
-//        env.getConfig().disableGenericTypes();
 
-         final HashSet<TopicPartition> partitionSet = new HashSet<>(Arrays.asList(
-                new TopicPartition("input", 0),
-                new TopicPartition("input", 1),
-                new TopicPartition("input", 2)
-        ));
+        Properties consumerProperties = new Properties();
+        consumerProperties.setProperty("bootstrap.servers", "localhost:9092");
+        consumerProperties.setProperty("client.id", "PeopleConsumerClient");
+        consumerProperties.setProperty("offset.reset", "earliest");
 
-        KafkaSource<PeopleOuterClass.People> source =
-                KafkaSource.<PeopleOuterClass.People>builder()
-                        .setBootstrapServers(BROKERS)
-                        .setProperty("partition.discovery.interval.ms", "10000")
-                        .setTopics(TOPIC)
-                        .setGroupId("groupId-protobuf-01")
-                        .setStartingOffsets(OffsetsInitializer.earliest())
-//                        .setValueOnlyDeserializer(new PeopleProtobufDeserializationSchema())
-                        .setValueOnlyDeserializer(new PeopleProtobufDeserializationSchema())
-                        .build();
+        GenericBinaryProtoDeserializer<PeopleOuterClass.People> genericDeserializer = new GenericBinaryProtoDeserializer<>(PeopleOuterClass.People.class);
+        PeopleDeserialize specificDeserializer = new PeopleDeserialize();
 
-        DataStreamSource<PeopleOuterClass.People> kafka = env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka");
-//        System.out.println("Running Debugging...");
+        FlinkKafkaConsumer<PeopleOuterClass.People> personsKafkaConsumer =
+                new FlinkKafkaConsumer<PeopleOuterClass.People>(TOPIC, genericDeserializer, consumerProperties);
 
-        kafka.print();
+        DataStream<PeopleOuterClass.People> personStreamOut = env.addSource(personsKafkaConsumer);
+//        DataStream<PeopleOuterClass.People> adultPersonStream = personStreamOut.filter(person -> person.getAge() >= 18);
+        DataStream<String> result = personStreamOut.map(new MapFunction<PeopleOuterClass.People, String>() {
+            @Override
+            public String map(PeopleOuterClass.People people) {
+                return String.format("The Person %s is adult (job %s)", people.getName(), people.getJob());
+            }
+        });
 
-        kafka.addSink(JdbcSink.sink("insert into public.people (name, timestamp, country, job, image) values (?, ?, ?, ?, ?)",
-                (statement, event) -> {
-                    statement.setString(1, event.getName());
-                    statement.setString(2, event.getTimestamp());
-                    statement.setString(3, event.getCountry());
-                    statement.setString(4, event.getJob());
-                    statement.setString(5, event.getImage());
-                },
-                JdbcExecutionOptions.builder()
-                        .withBatchSize(1000)
-                        .withBatchIntervalMs(200)
-                        .withMaxRetries(5)
-                        .build(),
-                new JdbcConnectionOptions.JdbcConnectionOptionsBuilder()
-                        .withUrl("jdbc:postgresql://172.27.216.159:5432/core_local")
-                        .withDriverName("org.postgresql.Driver")
-                        .withUsername("nandes")
-                        .withPassword("postgre")
-                        .build()
-        ));
-
-        env.execute("Kafka2postgres");
+        result.print();
+        env.execute("Flink Streaming Java API Skeleton");
     }
 }
